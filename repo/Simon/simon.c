@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <string.h>
 
 #define BLOCKS_COUNT 1
 #define ROUNDS_COUNT 32
@@ -9,20 +8,64 @@ typedef uint16_t word;
 typedef uint32_t block;
 typedef uint64_t key;
 
-word left_shift(word x, int n) {
+const uint64_t z_sequences[5] = {
+    0x3e8958737d12b0e6,
+    0x23be4c2d477c985a,
+    0x2bdc0d262847e5b3,
+    0x36eb19781229cd0f,
+    0x3479ad88170ca4ef
+};
 
+void print_round_keys(word round_keys[ROUNDS_COUNT], const char* title) {
+    printf("\n%s:\n", title);
+    printf("----------------------------------------\n");
+    for (int i = 0; i < ROUNDS_COUNT; i++) {
+        printf("> Round %2d key: k[%2d] = 0x%04X", i, i, round_keys[i]);
+        
+        if ((i + 1) % 4 == 0) printf("\n");
+        else printf("  ");
+    }
+    printf("----------------------------------------\n");
+}
+
+word left_shift(word x, int n) {
+    return (x << n) | (x >> (16 - n));
 }
 
 word right_shift(word x, int n) {
-
+    return (x >> n) | (x << (16 - n));
 }
 
 void simon_round(word *left, word *right, word round_key, int round_num) {
-
+    word temp = *left;
+    word f_x = (left_shift(*left, 1) & left_shift(*left, 8)) ^ left_shift(*left, 2);
+    
+    *left = *right ^ f_x ^ round_key;
+    *right = temp;
 }
 
 void key_schedule(word key_words[4], word round_keys[ROUNDS_COUNT]) {
+    word c = 0xFFFC;
+    int j = 0;
 
+    round_keys[0] = key_words[3];
+    round_keys[1] = key_words[2];
+    round_keys[2] = key_words[1];
+    round_keys[3] = key_words[0];
+
+
+    for (int i = 4; i < ROUNDS_COUNT; i++) {
+        word temp = right_shift(round_keys[i - 1], 3);
+        temp = temp ^ round_keys[i - 3];
+        temp = temp ^ right_shift(temp, 1);
+
+        int bit_index = (i - 4) % 62;
+        word z_bit = (z_sequences[j] >> bit_index) & 1;
+        
+        word not_key = ~round_keys[i - 4];
+
+        round_keys[i] = not_key ^ temp ^ z_bit ^ c;
+    }
 }
 
 block simon_encrypt(block plaintext, key k) {
@@ -35,6 +78,8 @@ block simon_encrypt(block plaintext, key k) {
     key_words[3] = k & 0xFFFF;
 
     key_schedule(key_words, round_keys);
+
+    print_round_keys(round_keys, "ALL ROUND KEYS");
 
     word left = (plaintext >> 16) & 0xFFFF;
     word right = plaintext & 0xFFFF;
@@ -51,9 +96,9 @@ block simon_encrypt(block plaintext, key k) {
 void test_simon() {
     printf("==========Simon 32/64 test==========\n");
 
-    block plaintext = 0x6574694c;
+    block plaintext = 0x65656877;
     key k = 0x1918111009080100;
-    block desired_ciphertext = 0xa86842f2;
+    block desired_ciphertext = 0xC69BE9BB;
 
     block received_ciphertext = simon_encrypt(plaintext, k);
     
@@ -61,6 +106,7 @@ void test_simon() {
     printf("Plaintext: %08X\n", plaintext);
     printf("Desired ciphertext: %08X\n", desired_ciphertext);
     printf("Received ciphertext: %08X\n", received_ciphertext);
+    printf("Test: %s\n", received_ciphertext == desired_ciphertext ? "PASSED" : "FAILED");
 }
 
 int main() {
