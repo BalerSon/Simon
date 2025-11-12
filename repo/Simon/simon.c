@@ -9,7 +9,7 @@ typedef uint32_t block;
 typedef uint64_t key;
 
 const uint64_t z_sequences[5] = {
-    0x3e8958737d12b0e6,
+    0x19c3522fb386a45f,
     0x23be4c2d477c985a,
     0x2bdc0d262847e5b3,
     0x36eb19781229cd0f,
@@ -53,7 +53,6 @@ void key_schedule(word key_words[4], word round_keys[ROUNDS_COUNT]) {
     round_keys[2] = key_words[1];
     round_keys[3] = key_words[0];
 
-
     for (int i = 4; i < ROUNDS_COUNT; i++) {
         word temp = right_shift(round_keys[i - 1], 3);
         temp = temp ^ round_keys[i - 3];
@@ -62,9 +61,7 @@ void key_schedule(word key_words[4], word round_keys[ROUNDS_COUNT]) {
         int bit_index = (i - 4) % 62;
         word z_bit = (z_sequences[j] >> bit_index) & 1;
         
-        word not_key = ~round_keys[i - 4];
-
-        round_keys[i] = not_key ^ temp ^ z_bit ^ c;
+        round_keys[i] = round_keys[i - 4] ^ temp ^ z_bit ^ c;
     }
 }
 
