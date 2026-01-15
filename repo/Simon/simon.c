@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <assert.h>
 
 #define BLOCKS_COUNT 1
 #define ROUNDS_COUNT 32
@@ -8,13 +9,7 @@ typedef uint16_t word;
 typedef uint32_t block;
 typedef uint64_t key;
 
-const uint64_t z_sequences[5] = {
-    0x19c3522fb386a45f,
-    0x23be4c2d477c985a,
-    0x2bdc0d262847e5b3,
-    0x36eb19781229cd0f,
-    0x3479ad88170ca4ef
-};
+const uint64_t z_sequence = 0x19c3522fb386a45f;
 
 void print_round_keys(word round_keys[ROUNDS_COUNT], const char* title) {
     printf("\n%s:\n", title);
@@ -59,7 +54,7 @@ void key_schedule(word key_words[4], word round_keys[ROUNDS_COUNT]) {
         temp = temp ^ right_shift(temp, 1);
 
         int bit_index = (i - 4) % 62;
-        word z_bit = (z_sequences[j] >> bit_index) & 1;
+        word z_bit = (z_sequence >> bit_index) & 1;
         
         round_keys[i] = round_keys[i - 4] ^ temp ^ z_bit ^ c;
     }
@@ -91,8 +86,6 @@ block simon_encrypt(block plaintext, key k) {
 }
 
 void test_simon() {
-    printf("==========Simon 32/64 test==========\n");
-
     block plaintext = 0x65656877;
     key k = 0x1918111009080100;
     block desired_ciphertext = 0xC69BE9BB;
