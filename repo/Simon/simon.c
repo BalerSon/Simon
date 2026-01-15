@@ -86,20 +86,18 @@ block simon_encrypt(block plaintext, key k) {
 }
 
 void test_simon() {
-    block plaintext = 0x65656877;
-    key k = 0x1918111009080100;
-    block desired_ciphertext = 0xC69BE9BB;
-
-    block received_ciphertext = simon_encrypt(plaintext, k);
+    block plaintext;
+    key k;
+    block ciphertext;
     
-    printf("\n==========Results==========\n");
-    printf("Plaintext: %08X\n", plaintext);
-    printf("Desired ciphertext: %08X\n", desired_ciphertext);
-    printf("Received ciphertext: %08X\n", received_ciphertext);
-    printf("Test: %s\n", received_ciphertext == desired_ciphertext ? "PASSED" : "FAILED");
+    block known_ciphertext = 0xC69BE9BB;
+    
+    ciphertext = simon_encrypt(plaintext, k);
+    
+    assert(ciphertext == known_ciphertext);
 }
 
-int main() {
-    test_simon();
-    return 0;
-}
+// int main() {
+//     test_simon();
+//     return 0;
+// }
